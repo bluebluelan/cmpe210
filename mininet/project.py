@@ -9,8 +9,8 @@ class MyTopo( Topo ):
         leftHost = self.addHost( 'h3', ip='10.0.0.3' )        
         rightHost = self.addHost( 'h4', ip='10.0.0.4' )        
         badHost1 = self.addHost('h1', ip='10.0.0.1')
-	badHost2 = self.addHost('h2', ip='10.0.0.1')
-	NODE2_IP = '192.168.56.103'
+	badHost2 = self.addHost('h2', ip='10.0.0.2')
+	#NODE2_IP = '192.168.56.103'
 
 	backHost1 = self.addHost('h5', ip='10.0.0.5')
 	backHost2 = self.addHost('h6', ip='10.0.0.6')
@@ -20,8 +20,8 @@ class MyTopo( Topo ):
 	
 	#midHost = self.addHost( 'h3' )
 	#midHost2 = self.addHost('h4')	
-	leftSwitch = self.addSwitch( 's2' )
-	rightSwitch = self.addSwitch('s1')
+	leftSwitch = self.addSwitch( 's1' )
+	rightSwitch = self.addSwitch('s2')
 	backupSwitch = self.addSwitch('s3')
 	#rightSwitch = self.addSwitch( 's2')        
         # Add links        
