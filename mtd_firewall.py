@@ -8,7 +8,7 @@ import httplib
 ip_protect = '10.0.0.8'
 switch_protect = "00:00:00:00:00:00:00:03"
 controller_ip = '192.168.56.102'
-threshold = 20
+threshold = 5
 
 
 flowSwid = {}
@@ -48,7 +48,7 @@ class StaticFlowPusher(object):
         conn.request(action, path, body, headers)
         response = conn.getresponse()
         ret = (response.status, response.reason, response.read())
-        print ret
+        #print ret
         conn.close()
         return ret
   
@@ -72,7 +72,7 @@ flow1 = {
 #pusher.set(flow2)
 
 
-def statDaemon(d):
+def statDaemon(d,data):
 	#print d
 	try:
 		if str(d['match']['ipv4_dst']) == ip_protect:
@@ -81,9 +81,9 @@ def statDaemon(d):
 				flowPair[fPKey]=[]
 				flowPair[fPKey].append(int(d['packetCount']))
 				flowPair[fPKey].append(int(d['match']['in_port']))
-			print d['packetCount']+"\n"
+			#print d['packetCount']+"\n"
 			flowPair[fPKey][0] = int(d['packetCount'])
-			print flowPair[fPKey][0]
+			print str(data)
 			flowSwid[switch_protect] = flowPair
 	except:
 		pass
@@ -134,7 +134,8 @@ curl -X POST -d '{
     "icmpv4_type":"8",
     "active":"true"}' http://192.168.1.68:8080/wm/staticflowpusher/json
 #curl -X GET http://192.168.1.68:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:02/json  
-#curl -X DELETE -d '{"name":"block_icmp_01"}' http://192.168.1.68:8080/wm/staticflowpusher/json
+#http://192.168.56.102:8080/wm/core/switch/00:00:00:00:00:00:00:0/flow/json
+#curl -X DELETE -d '{"name":"block_icmp_01"}' http://192.168.56.102:8080/wm/topology/route/00:00:00:00:00:00:00:01/1/00:00:00:00:00:00:00:02/2/json
 """
 initflag = True
 while 1:
@@ -143,11 +144,11 @@ while 1:
 	# parse response as json
 	jsondata = json.loads(html)
 	for data in jsondata:
-		#get the key from the dict object
+		print data
 		#print "+++++++++++++++++++ FIND HOST +++++++++++++++++++++"
-		for d in jsondata[data]["flows"]:
-			#print str(d)+"\n"
-			statDaemon(d)
+	for d in jsondata[switch_protect]["flows"]:
+		print str(d)+"\n"
+		if len(d['match']) >0: statDaemon(d,switch_protect)
 	print flowSwid#[switch_protect]
 	
 	for flowPair in flowSwid[switch_protect]: 
