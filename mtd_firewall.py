@@ -6,7 +6,7 @@ import httplib
 
 #PARAMETER
 ip_protect = '10.0.0.8'
-switch_protect = "00:00:00:00:00:00:00:02"
+switch_protect = "00:00:00:00:00:00:00:03"
 controller_ip = '192.168.56.102'
 threshold = 20
 
@@ -59,16 +59,16 @@ flow1 = {
     "name":"flow_mod_1",
     "cookie":"0",
     "priority":"2",
-    "in_port":"4",
-    #"eth_type":"0x0800",
-    #"ip_proto":"0x01",
-    #"ipv4_src":"10.0.0.1",
-    #"eth_src":"8e:df:b9:16:76:99",
-    #"icmpv4_type":"8",
+    "in_port":"5",
+    "eth_type":"0x0800",
+    "ip_proto":"0x01",
+    "ipv4_src":"10.0.0.1",
+    "eth_src":"12:bd:fe:73:00:0f",
+    #"icmpv4_type":"0",
     "active":"true",
-    #"actions":"output=1,set_field=eth_dst->d6:2f:6e:87:24:51,set_field=ipv4_dst->10.0.0.5"
+    "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
     }
-pusher.set(flow1)
+#pusher.set(flow1)
 #pusher.set(flow2)
 
 
@@ -163,7 +163,7 @@ while 1:
 				# parse response as json
 				jsondata = json.loads(html)
 				flow1["switch"]=str(switch_protect)
-				#pusher.set(flow1)
+				pusher.set(flow1)
 		except:
 			pass
 	response.close()
