@@ -64,7 +64,7 @@ flow1 = {
     "ip_proto":"0x01",
     "ipv4_src":"10.0.0.1",
     "eth_src":"12:bd:fe:73:00:0f",
-    #"icmpv4_type":"0",
+    "icmpv4_type":"8",
     "active":"true",
     "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
     }
@@ -73,7 +73,7 @@ flow1 = {
 
 
 def statDaemon(d,data):
-	#print d
+	#print switch_protect
 	try:
 		if str(d['match']['ipv4_dst']) == ip_protect:
 			fPKey = str(d['match']['ipv4_src'])+"-"+str(d['match']['ipv4_dst'])
@@ -83,7 +83,7 @@ def statDaemon(d,data):
 				flowPair[fPKey].append(int(d['match']['in_port']))
 			#print d['packetCount']+"\n"
 			flowPair[fPKey][0] = int(d['packetCount'])
-			print str(data)
+			#print "haha"+str(data)
 			flowSwid[switch_protect] = flowPair
 	except:
 		pass
@@ -144,11 +144,11 @@ while 1:
 	# parse response as json
 	jsondata = json.loads(html)
 	for data in jsondata:
-		print data
+		#print data
 		#print "+++++++++++++++++++ FIND HOST +++++++++++++++++++++"
-	for d in jsondata[switch_protect]["flows"]:
-		print str(d)+"\n"
-		if len(d['match']) >0: statDaemon(d,switch_protect)
+		for d in jsondata[data]["flows"]:
+			#print str(d)+"\n"
+			if len(d['match']) >0: statDaemon(d,data)
 	print flowSwid#[switch_protect]
 	
 	for flowPair in flowSwid[switch_protect]: 
