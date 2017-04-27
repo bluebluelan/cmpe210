@@ -19,7 +19,36 @@ flowCount =1
 blockflag = False
 pcnt = 0
 
-  
+flow1 = {
+    'switch':str(switch_protect),
+    "name":"icmp_beacon",
+    "cookie":"0",
+    "priority":"2",
+    "in_port":"5",
+    "eth_type":"0x0800",
+    "ip_proto":"0x01",
+    "ipv4_src":"10.0.0.1",
+    "eth_src":"12:bd:fe:73:00:0f",
+    "icmpv4_type":"8",
+    "active":"true",
+    "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
+}
+    
+flow2 = {
+    'switch':str(switch_protect),
+    "name":"icmp_voucher",
+    "cookie":"0",
+    "priority":"2",
+    "in_port":"5",
+    "eth_type":"0x0800",
+    "ip_proto":"0x01",
+    "ipv4_src":"10.0.0.1",
+    "eth_src":"12:bd:fe:73:00:0f",
+    "icmpv4_type":"8",
+    "active":"true",
+    "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
+}
+
 class StaticFlowPusher(object):
   
     def __init__(self, server):
@@ -54,56 +83,53 @@ class StaticFlowPusher(object):
   
 pusher = StaticFlowPusher(controller_ip)
   
-flow1 = {
-    'switch':str(switch_protect),
-    "name":"flow_mod_1",
-    "cookie":"0",
-    "priority":"2",
-    "in_port":"5",
-    "eth_type":"0x0800",
-    "ip_proto":"0x01",
-    "ipv4_src":"10.0.0.1",
-    "eth_src":"12:bd:fe:73:00:0f",
-    "icmpv4_type":"8",
-    "active":"true",
-    "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
-    }
+
 #pusher.set(flow1)
 #pusher.set(flow2)
 
 
-def statDaemon(d,data):
-	#print switch_protect
-	try:
-		if str(d['match']['ipv4_dst']) == ip_protect:
-			fPKey = str(d['match']['ipv4_src'])+"-"+str(d['match']['ipv4_dst'])
-			if fPKey not in flowPair:
-				flowPair[fPKey]=[]
-				flowPair[fPKey].append(int(d['packetCount']))
-				flowPair[fPKey].append(int(d['match']['in_port']))
-			#print d['packetCount']+"\n"
-			flowPair[fPKey][0] = int(d['packetCount'])
-			#print "haha"+str(data)
-			flowSwid[switch_protect] = flowPair
-	except:
-		pass
+def get_protect_switch_flow():
+    url_json = "http://"+controller_ip+":8080/wm/core/switch/"+switch_protect+"/flow/json"
+    #print url_json
+    response = urllib2.urlopen(url_json)
+    html = response.read()
+    # parse response as json
+    jsondata = json.loads(html)
+    response.close()
+    return jsondata
+
+def statDaemon(d):
+    #print switch_protect
+    try:
+        if str(d['match']['ipv4_dst']) == ip_protect:
+            fPKey = str(d['match']['ipv4_src'])+"-"+str(d['match']['ipv4_dst'])
+            if fPKey not in flowPair:
+                flowPair[fPKey]=[]
+                flowPair[fPKey].append(int(d['packetCount']))
+                flowPair[fPKey].append(int(d['match']['in_port']))
+            #print d['packetCount']+"\n"
+            flowPair[fPKey][0] = int(d['packetCount'])
+            #print "haha"+str(data)
+            flowSwid[switch_protect] = flowPair
+    except:
+        pass
 
 def combineFlowEntry_icmpblock(in_port, switch_protect):
-	sss  = '{"switch":"'+str(switch_protect)+'", '
-	sss += '"name":"block_icmp_'+str(flowCount)+'", '
-	sss += '"cookie":"0", "priority":"0", '
-	sss += '"in_port":"'+str(in_port)+'", '
-	sss += '"icmpv4_type":"8", "active":"true"}'
-	return sss
+    sss  = '{"switch":"'+str(switch_protect)+'", '
+    sss += '"name":"block_icmp_'+str(flowCount)+'", '
+    sss += '"cookie":"0", "priority":"0", '
+    sss += '"in_port":"'+str(in_port)+'", '
+    sss += '"icmpv4_type":"8", "active":"true"}'
+    return sss
 def combineFlowEntry_icmpRedirect(in_port, switch_protect):
-	sss  = '{"switch":"'+str(switch_protect)+'", '
-	sss += '"name":"block_icmp_'+str(flowCount)+'", '
-	sss += '"cookie":"0", "priority":"32767", '
-	sss += '"in_port":"'+str(in_port)+'", '
-	sss += '"icmpv4_type":"8", "active":"true", '
-	sss += '"actions":"output=4, set_ipv4_dst=10.0.0.6, set_eth_dst=42:e2:25:13:22:eb"}'
+    sss  = '{"switch":"'+str(switch_protect)+'", '
+    sss += '"name":"block_icmp_'+str(flowCount)+'", '
+    sss += '"cookie":"0", "priority":"32767", '
+    sss += '"in_port":"'+str(in_port)+'", '
+    sss += '"icmpv4_type":"8", "active":"true", '
+    sss += '"actions":"output=4, set_ipv4_dst=10.0.0.6, set_eth_dst=42:e2:25:13:22:eb"}'
 
-	return sss
+    return sss
 #sss = '{"switch":"00:00:00:00:00:00:00:02", "name":"block_icmp_01", "cookie":"0", "priority":"32768", "in_port":"3", "icmpv4_type":"8", "active":"true"}'
 
 #curl -X POST http://192.168.1.68:8080/wm/statistics/config/enable/json
@@ -134,38 +160,36 @@ curl -X POST -d '{
     "icmpv4_type":"8",
     "active":"true"}' http://192.168.1.68:8080/wm/staticflowpusher/json
 #curl -X GET http://192.168.1.68:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:02/json  
-#http://192.168.56.102:8080/wm/core/switch/00:00:00:00:00:00:00:0/flow/json
+#http://192.168.56.102:8080/wm/core/switch/00:00:00:00:00:00:00:03/flow/json
 #curl -X DELETE -d '{"name":"block_icmp_01"}' http://192.168.56.102:8080/wm/topology/route/00:00:00:00:00:00:00:01/1/00:00:00:00:00:00:00:02/2/json
 """
 initflag = True
 while 1:
-	response = urllib2.urlopen('http://192.168.56.102:8080/wm/core/switch/all/flow/json')
-	html = response.read()
-	# parse response as json
-	jsondata = json.loads(html)
-	for data in jsondata:
-		#print data
-		#print "+++++++++++++++++++ FIND HOST +++++++++++++++++++++"
-		for d in jsondata[data]["flows"]:
-			#print str(d)+"\n"
-			if len(d['match']) >0: statDaemon(d,data)
-	print flowSwid#[switch_protect]
-	
-	for flowPair in flowSwid[switch_protect]: 
-		#print flowSwid[switch_protect][flowPair][0]
-		try:
-			if flowSwid[switch_protect][flowPair][0] > threshold:
-				print "icmp ddos detect!\n"
 
-				#sss=combineFlowEntry_icmpblock(flowSwid[switch_protect][flowPair][1],switch_protect)
-				#flow1["in_port"]=str(flowSwid[switch_protect][flowPair][1])
-				#response=urllib2.urlopen("http://192.168.56.102:8080/wm/staticflowpusher/json", sss)
-				#html = response.read()
-				# parse response as json
-				jsondata = json.loads(html)
-				flow1["switch"]=str(switch_protect)
-				pusher.set(flow1)
-		except:
-			pass
-	response.close()
-	time.sleep(5)
+    jsondata = get_protect_switch_flow()
+
+    for data in jsondata:
+        #print data
+        for d in jsondata[data]:
+            #print str(d)+"\n"
+            if len(d['match']) >0: statDaemon(d)
+    print flowSwid#[switch_protect]
+    """
+    for flowPair in flowSwid[switch_protect]: 
+        #print flowSwid[switch_protect][flowPair][0]
+        try:
+            if flowSwid[switch_protect][flowPair][0] > threshold:
+                print "icmp ddos detect!\n"
+
+                #sss=combineFlowEntry_icmpblock(flowSwid[switch_protect][flowPair][1],switch_protect)
+                #flow1["in_port"]=str(flowSwid[switch_protect][flowPair][1])
+                #response=urllib2.urlopen("http://192.168.56.102:8080/wm/staticflowpusher/json", sss)
+                #html = response.read()
+                # parse response as json
+                jsondata = json.loads(html)
+                flow1["switch"]=str(switch_protect)
+                pusher.set(flow1)
+        except:
+            pass
+    """
+    time.sleep(5)
