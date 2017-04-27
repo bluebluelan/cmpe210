@@ -31,12 +31,12 @@ flow1 = {
     "eth_src":"12:bd:fe:73:00:0f",
     "icmpv4_type":"8",
     "active":"true",
-    "actions":"output=1,set_field=eth_dst->86:ee:8f:9b:8d:a8,set_field=ipv4_dst->10.0.0.5"
+    "actions":"output=4"
 }
     
 flow2 = {
     'switch':str(switch_protect),
-    "name":"icmp_voucher",
+    "name":"icmp_block",
     "cookie":"0",
     "priority":"2",
     "in_port":"5",
@@ -86,6 +86,23 @@ pusher = StaticFlowPusher(controller_ip)
 
 #pusher.set(flow1)
 #pusher.set(flow2)
+
+#http://192.168.56.102:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:03/flow/json
+#http://192.168.56.102:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:03/json
+#http://192.168.56.102:8080/wm/core/staticflowpusher/list/00:00:00:00:00:00:00:03/flow/json
+#http://192.168.56.102:8080/wm/core/switch/00:00:00:00:00:00:00:03/flow/json
+def get_icmp_echo_count():
+    url_json = "http://"+controller_ip+":8080/wm/core/switch/"+switch_protect+"/flow/json"
+    #print url_json
+    response = urllib2.urlopen(url_json)
+    html = response.read()
+    # parse response as json
+    jsondata = json.loads(html)
+    response.close()
+    return jsondata
+
+def push_icmp_beacon():
+    pusher.set(flow1)
 
 
 def get_protect_switch_flow():
@@ -159,37 +176,40 @@ curl -X POST -d '{
     "in_port":"3",
     "icmpv4_type":"8",
     "active":"true"}' http://192.168.1.68:8080/wm/staticflowpusher/json
-#curl -X GET http://192.168.1.68:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:02/json  
+#curl -X GET http://192.168.56.102:8080/wm/staticflowpusher/list/00:00:00:00:00:00:00:03/json  
 #http://192.168.56.102:8080/wm/core/switch/00:00:00:00:00:00:00:03/flow/json
 #curl -X DELETE -d '{"name":"block_icmp_01"}' http://192.168.56.102:8080/wm/topology/route/00:00:00:00:00:00:00:01/1/00:00:00:00:00:00:00:02/2/json
 """
 initflag = True
 while 1:
 
-    jsondata = get_protect_switch_flow()
+    try:
+        jsondata = get_protect_switch_flow()
 
-    for data in jsondata:
-        #print data
-        for d in jsondata[data]:
-            #print str(d)+"\n"
-            if len(d['match']) >0: statDaemon(d)
-    print flowSwid#[switch_protect]
-    """
-    for flowPair in flowSwid[switch_protect]: 
-        #print flowSwid[switch_protect][flowPair][0]
-        try:
-            if flowSwid[switch_protect][flowPair][0] > threshold:
-                print "icmp ddos detect!\n"
+        for data in jsondata:
+            #print data
+            for d in jsondata[data]:
+                #print str(d)+"\n"
+                if len(d['match']) >0: statDaemon(d)
+        print flowSwid#[switch_protect]
+    except:
+        pass
+    push_icmp_beacon()
 
-                #sss=combineFlowEntry_icmpblock(flowSwid[switch_protect][flowPair][1],switch_protect)
-                #flow1["in_port"]=str(flowSwid[switch_protect][flowPair][1])
-                #response=urllib2.urlopen("http://192.168.56.102:8080/wm/staticflowpusher/json", sss)
-                #html = response.read()
-                # parse response as json
-                jsondata = json.loads(html)
-                flow1["switch"]=str(switch_protect)
-                pusher.set(flow1)
-        except:
-            pass
-    """
+    jsondata = get_icmp_echo_count()
+
+   # print jsondata
+    for i in jsondata["flows"]:
+        #print i['priority']
+        if i['priority'] == '2':
+            if int(i['packetCount']) > threshold:
+                print "icmp_ddos_detect"
+                pusher.set(flow2)
+        #for d in i:
+        #    print d
+       # if i["priority"] == 2:
+       #     print i["packetCount"]
+       # if i == 'icmp_beacon':
+       #     pass
+
     time.sleep(5)
